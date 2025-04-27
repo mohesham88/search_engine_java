@@ -1,6 +1,9 @@
 package InvertedIndex;
 
 import java.util.*;
+import Stemmer.Stemmer;
+
+
 
 public class InvertedIndex {
     // term -> list of postings
@@ -13,10 +16,14 @@ public class InvertedIndex {
 
         String[] tokens = tokenizeAndNormalize(text);
         Map<String, Integer> termFreqs = new HashMap<>();
-
+        
         for (String token : tokens) {
+            Stemmer stemmer = new Stemmer();
             if (token.isBlank()) continue;
-            termFreqs.put(token, termFreqs.getOrDefault(token, 0) + 1);
+            stemmer.addString(token);
+            stemmer.stem();
+            String stemmed = stemmer.toString();
+            termFreqs.put(stemmed, termFreqs.getOrDefault(stemmed, 0) + 1);
         }
 
         for (Map.Entry<String, Integer> entry : termFreqs.entrySet()) {

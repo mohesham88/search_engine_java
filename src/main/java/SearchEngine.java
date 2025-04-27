@@ -1,6 +1,6 @@
 import java.util.*;
 import InvertedIndex.*;
-
+import Stemmer.Stemmer;
 public class SearchEngine {
     private static final double SMALL_VALUE = 0.5; // Small value for terms not in collection
 
@@ -13,7 +13,17 @@ public class SearchEngine {
     }
 
     public List<Result> search(String query) {
-        String[] queryTerms = query.toLowerCase().split("\\W+");
+      String[] queryTermsRaw = query.toLowerCase().split("\\W+");
+      List<String> queryTerms = new ArrayList<>();
+      for (String term : queryTermsRaw) {
+            Stemmer stemmer = new Stemmer();
+            if (!term.isBlank()) {
+                stemmer.addString(term);
+                stemmer.stem();
+                System.out.println(stemmer.toString());
+                queryTerms.add(stemmer.toString());
+            }
+        }
 
         Map<String, Double> queryVector = new HashMap<>();
         Map<Integer, Map<String, Double>> docVectors = new HashMap<>();
