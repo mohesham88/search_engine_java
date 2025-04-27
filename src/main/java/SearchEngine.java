@@ -2,6 +2,7 @@ import java.util.*;
 import InvertedIndex.*;
 
 public class SearchEngine {
+    private static final double SMALL_VALUE = 0.5; // Small value for terms not in collection
 
     private final InvertedIndex index;
     private final int totalDocs;
@@ -17,12 +18,11 @@ public class SearchEngine {
         Map<String, Double> queryVector = new HashMap<>();
         Map<Integer, Map<String, Double>> docVectors = new HashMap<>();
 
-        // Build document vectors and query vector
         for (String term : queryTerms) {
-            if (!index.getIndex().containsKey(term)) continue;
-
-            List<Posting> postings = index.getIndex().get(term);
-            double idf = Math.log10((double) totalDocs / postings.size());
+            List<Posting> postings = index.getIndex().getOrDefault(term, Collections.emptyList());
+            // if the term is not in any documents make df(t) equal to a small value instead of completely skipping it
+            double df = Math.max(postings.size(), SMALL_VALUE);
+            double idf = Math.log10((double) totalDocs / df);
 
             // query vector: count term in query
             queryVector.put(term, queryVector.getOrDefault(term, 0.0) + 1);
@@ -37,10 +37,11 @@ public class SearchEngine {
             }
         }
 
-        // Apply TF-IDF weighting to the query vector
+        // Apply TF-IDF weighting to the query
         for (String term : queryVector.keySet()) {
-            int df = index.getIndex().getOrDefault(term, Collections.emptyList()).size();
-            double idf = df == 0 ? 0 : Math.log10((double) totalDocs / df);
+            List<Posting> postings = index.getIndex().getOrDefault(term, Collections.emptyList());
+            double df = Math.max(postings.size(), SMALL_VALUE);
+            double idf = Math.log10((double) totalDocs / df);
             double tf = 1 + Math.log10(queryVector.get(term));
             queryVector.put(term, tf * idf);
         }
