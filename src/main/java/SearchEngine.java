@@ -20,7 +20,6 @@ public class SearchEngine {
             if (!term.isBlank()) {
                 stemmer.addString(term);
                 stemmer.stem();
-                System.out.println(stemmer.toString());
                 queryTerms.add(stemmer.toString());
             }
         }
@@ -31,7 +30,7 @@ public class SearchEngine {
         for (String term : queryTerms) {
             List<Posting> postings = index.getIndex().getOrDefault(term, Collections.emptyList());
             // if the term is not in any documents make df(t) equal to a small value instead of completely skipping it
-            double df = Math.max(postings.size(), SMALL_VALUE);
+            double df = Math.max(postings.size(), SMALL_VALUE); // the number of docs containing the term
             double idf = Math.log10((double) totalDocs / df);
 
             // query vector: count term in query
@@ -78,22 +77,33 @@ public class SearchEngine {
         return topResults;
     }
 
-    private double cosineSimilarity(Map<String, Double> vec1, Map<String, Double> vec2) {
-        Set<String> allTerms = new HashSet<>(vec1.keySet());
-        allTerms.addAll(vec2.keySet());
+    private double cosineSimilarity(Map<String, Double> queryVec, Map<String, Double> docVec) {
 
-        double dotProduct = 0, normA = 0, normB = 0;
-        for (String term : allTerms) {
-            double a = vec1.getOrDefault(term, 0.0);
-            double b = vec2.getOrDefault(term, 0.0);
+        double dotProduct = 0, queryNorm = 0, docNorm = 0;
 
-            dotProduct += a * b;
-            normA += a * a;
-            normB += b * b;
+        for(String term : queryVec.keySet()) {
+            double queryWeight = queryVec.get(term);
+            double docWeight = docVec.getOrDefault(term , 0.0);
+            dotProduct += queryWeight * docWeight;
         }
 
-        if (normA == 0 || normB == 0) return 0;
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+        for (double weight : queryVec.values()) {
+            queryNorm += weight * weight;
+        }
+
+        // Calculate the norm of the document vector
+        for (double weight : docVec.values()) {
+            docNorm += weight * weight;
+        }
+
+        // avoid division by zero
+        if (docNorm == 0 || queryNorm == 0) {
+            return 0.0; // the cosine similarity is zero
+        }
+
+        // Return the normalized cosine similarity
+        return dotProduct / Math.sqrt(queryNorm * docNorm);
+
     }
 
     public static class Result {
